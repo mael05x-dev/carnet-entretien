@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carnet d'entretien</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f6df6">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   THÈMES & VARIABLES
+   ============================================================ */
+:root {
+  --bg: #f3f4f7; --surface: #ffffff; --surface-2: #f7f8fb; --border: #e4e6ec;
+  --text: #16181d; --text-2: #5b6170; --text-3: #8a90a0;
+  --accent: #2f6df6; --accent-soft: #e8efff; --accent-ink: #1d4fd1;
+  --ok: #1f9d55; --ok-soft: #e3f5ea; --soon: #d97706; --soon-soft: #fff1dc;
+  --late: #dc2626; --late-soft: #fde8e8; --unk: #6b7280; --unk-soft: #eceef2;
+  --shadow: 0 1px 2px rgba(16,24,40,.05), 0 6px 20px rgba(16,24,40,.06);
+  --radius: 16px; --radius-s: 10px;
+}
+[data-theme="dark"] {
+  --bg: #0f1116; --surface: #171a21; --surface-2: #1e222b; --border: #2a2f3a;
+  --text: #eef0f4; --text-2: #a4aab8; --text-3: #6f7584;
+  --accent: #5b8cff; --accent-soft: #1b2744; --accent-ink: #8fb0ff;
+  --ok: #34c272; --ok-soft: #10311f; --soon: #f0a040; --soon-soft: #3a2a10;
+  --late: #f26464; --late-soft: #3d1717; --unk: #8d94a6; --unk-soft: #262a33;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
+h1 { font-size: 22px; } h2 { font-size: 17px; } h3 { font-size: 15px; }
+.muted { color: var(--text-2); } .small { font-size: 13px; } .tiny { font-size: 12px; color: var(--text-3); }
+.hidden { display: none !important; }
+
+/* ============================================================
+   MISE EN PAGE
+   ============================================================ */
+.app { display: flex; min-height: 100%; }
+.sidebar {
+  width: 230px; flex: none; background: var(--surface); border-right: 1px solid var(--border);
+  padding: 22px 14px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 18px; font-weight: 700; font-size: 17px; }
+.brand .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 18px; }
+.nav-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: var(--radius-s);
+  background: transparent; color: var(--text-2); font-weight: 500; text-align: left;
+}
+.nav-btn:hover { background: var(--surface-2); color: var(--text); }
+.nav-btn.active { background: var(--accent-soft); color: var(--accent-ink); }
+.nav-btn svg { width: 20px; height: 20px; }
+.sidebar .spacer { flex: 1; }
+.main { flex: 1; min-width: 0; padding: 24px 28px 90px; max-width: 1100px; margin: 0 auto; width: 100%; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.topbar .actions { display: flex; gap: 8px; align-items: center; }
+.bottom-nav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border);
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); z-index: 50;
+}
+.bottom-nav .nav-btn { flex-direction: column; gap: 3px; font-size: 11px; padding: 6px 4px; justify-content: center; text-align: center; }
+.bottom-nav .nav-btn svg { width: 22px; height: 22px; }
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .bottom-nav { display: flex; }
+  .main { padding: 16px 14px 90px; }
+  .topbar h1 { font-size: 20px; }
+}
+
+/* ============================================================
+   COMPOSANTS
+   ============================================================ */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.card + .card { margin-top: 14px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.section-title { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 10px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: var(--radius-s);
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 500; font-size: 14px;
+}
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--late); border-color: var(--late); background: transparent; }
+.btn.sm { padding: 6px 10px; font-size: 13px; }
+.btn.icon { padding: 8px; }
+.btn svg { width: 18px; height: 18px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.soon { background: var(--soon-soft); color: var(--soon); }
+.chip.late { background: var(--late-soft); color: var(--late); }
+.chip.unknown { background: var(--unk-soft); color: var(--unk); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.ok { background: var(--ok); } .dot.soon { background: var(--soon); } .dot.late { background: var(--late); } .dot.unknown { background: var(--unk); }
+.kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 12px; }
+.kpi .tile { background: var(--surface-2); border-radius: var(--radius-s); padding: 10px 12px; }
+.kpi .tile .v { font-size: 19px; font-weight: 700; margin-top: 2px; }
+.kpi .tile .l { font-size: 12px; color: var(--text-2); }
+.list { display: flex; flex-direction: column; }
+.row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--border);
+}
+.row:first-child { border-top: 0; }
+.row .grow { flex: 1; min-width: 0; }
+.row .name { font-weight: 500; }
+.row .sub { font-size: 13px; color: var(--text-2); }
+.row .right { text-align: right; flex: none; }
+.row .right .v { font-weight: 600; }
+.row .right .s { font-size: 12px; color: var(--text-3); }
+.row.clickable { cursor: pointer; }
+.row.clickable:hover { background: var(--surface-2); margin: 0 -10px; padding-left: 14px; padding-right: 14px; border-radius: 8px; }
+.ico { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--surface-2); flex: none; font-size: 18px; }
+.vehicle-card { cursor: pointer; transition: transform .12s; }
+.vehicle-card:hover { transform: translateY(-2px); }
+.vehicle-head { display: flex; align-items: center; gap: 12px; }
+.vehicle-head .ico { width: 46px; height: 46px; font-size: 24px; border-radius: 14px; background: var(--accent-soft); }
+.km-inline { display: inline-flex; align-items: center; gap: 6px; }
+.km-inline input { width: 110px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 600; }
+.empty { text-align: center; padding: 34px 16px; color: var(--text-2); }
+.empty .big { font-size: 34px; margin-bottom: 8px; }
+.note { background: var(--surface-2); border-radius: var(--radius-s); padding: 10px 12px; font-size: 13px; color: var(--text-2); }
+.toast {
+  position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg);
+  padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 500; opacity: 0; transition: .2s; z-index: 200; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tabs .btn.active { background: var(--accent-soft); border-color: transparent; color: var(--accent-ink); }
+
+/* Formulaires */
+.form { display: grid; gap: 12px; }
+.form .f { display: grid; gap: 5px; }
+.form label { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.form input, .form select, .form textarea {
+  width: 100%; padding: 10px 12px; border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--surface-2);
+}
+.form input:focus, .form select:focus, .form textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.form .inline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.checks { display: grid; gap: 4px; }
+.checks .cat { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
+.check { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.check:hover { background: var(--surface-2); }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.check .c { margin-left: auto; font-size: 12px; color: var(--text-3); }
+.seg { display: flex; border: 1px solid var(--border); border-radius: var(--radius-s); overflow: hidden; }
+.seg button { flex: 1; padding: 9px; border: 0; background: var(--surface-2); color: var(--text-2); font-weight: 500; }
+.seg button.on { background: var(--accent); color: #fff; }
+
+/* Modales */
+.modal-bg { position: fixed; inset: 0; background: rgba(10,12,18,.55); display: none; align-items: flex-end; justify-content: center; z-index: 100; padding: 0; }
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--surface); width: 100%; max-width: 560px; max-height: 92vh; overflow: auto; border-radius: 20px 20px 0 0; padding: 20px;
+  animation: up .18s ease-out;
+}
+@keyframes up { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 700px) { .modal-bg { align-items: center; padding: 20px; } .modal { border-radius: 20px; } }
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+
+/* Écran de démarrage */
+.setup-op { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+.setup-op .inputs { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.setup-op input[type=date], .setup-op input[type=number] { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); width: 140px; }
+.setup-op input[type=number] { width: 110px; }
+.setup-op .unk { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-2); }
+@media (max-width: 600px) { .setup-op { grid-template-columns: 1fr; } }
+
+/* Graphique */
+.chart-wrap { position: relative; }
+.chart-wrap svg { width: 100%; height: auto; display: block; }
+.chart-tip { position: absolute; background: var(--text); color: var(--bg); font-size: 12px; padding: 6px 9px; border-radius: 8px; pointer-events: none; white-space: nowrap; display: none; z-index: 5; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.tbl th, table.tbl td { padding: 8px 6px; text-align: left; border-top: 1px solid var(--border); }
+table.tbl th { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; border-top: 0; }
+table.tbl td.num, table.tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.photo-thumb { width: 54px; height: 54px; object-fit: cover; border-radius: 8px; cursor: pointer; }
+.fab { position: fixed; right: 18px; bottom: 84px; z-index: 40; border-radius: 999px; padding: 14px 18px; box-shadow: 0 8px 24px rgba(47,109,246,.4); }
+@media (min-width: 901px) { .fab { bottom: 28px; right: 28px; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Barre latérale (PC) -->
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">🔧</div>Carnet d'entretien</div>
+    <nav id="nav-side"></nav>
+    <div class="spacer"></div>
+    <button class="nav-btn" id="theme-side" onclick="toggleTheme()"></button>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Barre d'onglets (mobile) -->
+<nav class="bottom-nav" id="nav-bottom"></nav>
+
+<!-- Bouton flottant -->
+<button class="btn primary fab" id="fab" onclick="openEntryModal()">＋ Entretien</button>
+
+<!-- Modale générique -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DONNÉES PAR DÉFAUT
+   ============================================================ */
+const CATS = {
+  moteur: { label: 'Moteur', ico: '⚙️' },
+  freins: { label: 'Freins', ico: '🛑' },
+  pneus: { label: 'Pneus', ico: '🛞' },
+  transmission: { label: 'Transmission', ico: '🔗' },
+  liquides: { label: 'Liquides', ico: '🧪' },
+  filtres: { label: 'Filtres', ico: '🌀' },
+  suspension: { label: 'Suspension / direction', ico: '🪜' },
+  reglementaire: { label: 'Contrôle réglementaire', ico: '📋' },
+  autre: { label: 'Autre', ico: '📌' },
+};
+
+// Opération : km = intervalle en km, m = intervalle en mois, min/max = coût estimé, check = simple contrôle (validable "RAS")
+const DEFAULT_OPS = {
+  mazda2: [
+    { name: 'Vidange huile + filtre à huile', cat: 'moteur', km: 15000, m: 12, min: 80, max: 150 },
+    { name: 'Filtre à air', cat: 'filtres', km: 30000, min: 20, max: 40 },
+    { name: 'Filtre habitacle', cat: 'filtres', km: 15000, m: 12, min: 15, max: 30 },
+    { name: 'Bougies', cat: 'moteur', km: 60000, min: 60, max: 120, essenceOnly: true },
+    { name: 'Liquide de frein', cat: 'liquides', m: 24, min: 50, max: 90 },
+    { name: 'Liquide de refroidissement', cat: 'liquides', m: 48, min: 60, max: 120, notes: 'À remplacer dès maintenant si la date est inconnue.' },
+    { name: 'Plaquettes de frein AV', cat: 'freins', km: 40000, min: 80, max: 180, notes: 'Contrôle conseillé à 20 000 km.' },
+    { name: 'Disques de frein AV', cat: 'freins', km: 80000, min: 150, max: 300 },
+    { name: 'Pneus (les 4)', cat: 'pneus', km: 40000, min: 200, max: 400, notes: 'Contrôler l\'usure régulièrement.' },
+    { name: 'Courroie accessoires', cat: 'moteur', km: 90000, min: 80, max: 150 },
+    { name: 'Amortisseurs', cat: 'suspension', km: 130000, min: 300, max: 500, notes: 'Contrôle à 100 000 km, remplacement entre 120 000 et 150 000 km.' },
+    { name: 'Contrôle rotules / biellettes', cat: 'suspension', km: 40000, m: 24, min: 0, max: 0, check: true, notes: 'Remplacement si besoin : 80–200 €.' },
+    { name: 'Contrôle durites et silentblocs', cat: 'suspension', m: 24, min: 0, max: 0, check: true },
+    { name: 'Batterie', cat: 'autre', m: 60, min: 80, max: 150 },
+    { name: 'Contrôle technique', cat: 'reglementaire', m: 24, min: 70, max: 90, notes: 'Voiture de plus de 4 ans : tous les 2 ans. Prévoir une contre-visite si nécessaire.' },
+  ],
+  er6n: [
+    { name: 'Vidange huile', cat: 'moteur', km: 6000, m: 12, min: 40, max: 80 },
+    { name: 'Filtre à huile', cat: 'filtres', km: 12000, min: 15, max: 30 },
+    { name: 'Bougies', cat: 'moteur', km: 12000, min: 30, max: 60 },
+    { name: 'Filtre à air', cat: 'filtres', km: 18000, min: 20, max: 40 },
+    { name: 'Jeu aux soupapes', cat: 'moteur', km: 24000, min: 150, max: 300 },
+    { name: 'Kit chaîne (chaîne + pignon + couronne)', cat: 'transmission', km: 25000, min: 120, max: 250, notes: 'Entre 20 000 et 30 000 km selon l\'usage.' },
+    { name: 'Graissage / tension de chaîne', cat: 'transmission', km: 750, min: 0, max: 0, check: true, notes: 'Rappel léger, tous les 500 à 1 000 km.' },
+    { name: 'Contrôle plaquettes AV/AR', cat: 'freins', km: 6000, min: 0, max: 0, check: true },
+    { name: 'Plaquettes de frein AV', cat: 'freins', km: 20000, min: 40, max: 90, notes: 'Entre 15 000 et 25 000 km.' },
+    { name: 'Plaquettes de frein AR', cat: 'freins', km: 20000, min: 40, max: 90, notes: 'Entre 15 000 et 25 000 km.' },
+    { name: 'Liquide de frein', cat: 'liquides', m: 24, min: 40, max: 70 },
+    { name: 'Liquide de refroidissement', cat: 'liquides', m: 36, min: 40, max: 80 },
+    { name: 'Huile de fourche', cat: 'suspension', km: 20000, m: 24, min: 80, max: 150 },
+    { name: 'Pneu avant', cat: 'pneus', km: 15000, min: 150, max: 300 },
+    { name: 'Pneu arrière', cat: 'pneus', km: 10000, min: 150, max: 300, notes: 'Entre 8 000 et 12 000 km.' },
+    { name: 'Batterie', cat: 'autre', m: 42, min: 60, max: 120, notes: '3 à 4 ans.' },
+    { name: 'Contrôle technique moto', cat: 'reglementaire', m: 36, min: 50, max: 70, notes: 'Premier passage dû en 2024 pour une moto de 2015, puis tous les 3 ans (prochain : 2027).' },
+  ],
+};
+const DIESEL_OP = { name: 'Courroie de distribution + pompe à eau', cat: 'moteur', km: 120000, m: 120, min: 400, max: 700, priority: true, notes: 'Prioritaire : 120 000 km ou 10 ans. À 116 000 km et 20 ans, à faire si jamais remplacée.' };
+
+const DEFAULT_VEHICLES = [
+  { id: 'mazda2', name: 'Mazda 2', brand: 'Mazda', model: '2', year: 2006, plate: '', km: 116000, dateCirc: '2006-01-01', kmPerMonth: null, type: 'car', fuel: null },
+  { id: 'er6n', name: 'Kawasaki ER-6n', brand: 'Kawasaki', model: 'ER-6n', year: 2015, plate: '', km: 37000, dateCirc: '2015-01-01', kmPerMonth: null, type: 'moto', fuel: null },
+];
+
+/* ============================================================
+   ÉTAT & SAUVEGARDE
+   ============================================================ */
+const KEY = 'carnet-entretien-v1';
+let state = null;
+
+function freshState() {
+  const s = { version: 1, theme: 'light', setupDone: false, thresholds: { km: 1000, days: 30 }, vehicles: [], ops: [], entries: [], kmLog: [] };
+  DEFAULT_VEHICLES.forEach(v => {
+    s.vehicles.push({ ...v });
+    s.kmLog.push({ vehicleId: v.id, date: today(), km: v.km });
+    DEFAULT_OPS[v.id].forEach(o => s.ops.push(makeOp(v.id, o)));
+  });
+  return s;
+}
+function makeOp(vehicleId, o) {
+  return { id: uid(), vehicleId, name: o.name, cat: o.cat, km: o.km || null, m: o.m || null, min: o.min || 0, max: o.max || 0,
+    check: !!o.check, priority: !!o.priority, essenceOnly: !!o.essenceOnly, notes: o.notes || '', baseDate: null, baseKm: null };
+}
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) { state = JSON.parse(raw); return; } } catch (e) {}
+  state = freshState();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { toast('Sauvegarde impossible (stockage plein ?)'); } }
+
+/* ============================================================
+   UTILITAIRES
+   ============================================================ */
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const today = () => isoLocal(new Date());
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function fmtDate(iso) { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+function fmtKm(n) { return n == null ? '—' : Math.round(n).toLocaleString('fr-FR') + ' km'; }
+function fmtEur(n) { return n == null ? '—' : Math.round(n).toLocaleString('fr-FR') + ' €'; }
+function fmtRange(min, max) { if (!min && !max) return 'gratuit'; if (min === max) return fmtEur(min); return `${Math.round(min)}–${Math.round(max)} €`; }
+function addMonths(iso, months) { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() + months); return isoLocal(d); }
+function daysBetween(a, b) { return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000); }
+function vehicle(id) { return state.vehicles.find(v => v.id === id); }
+function vIcon(v) { return v.type === 'moto' ? '🏍️' : '🚗'; }
+function kmInput(v) { return `<span class="km-inline"><input type="number" value="${v.km}" step="100" min="0" onchange="setKm('${v.id}', this.value)" onclick="event.stopPropagation()"> km</span>`; }
+
+/* Kilométrage moyen mensuel : saisi, sinon calculé à partir des relevés, sinon valeur par défaut */
+function kmPerMonth(v) {
+  if (v.kmPerMonth) return v.kmPerMonth;
+  const pts = [...state.kmLog.filter(k => k.vehicleId === v.id), ...state.entries.filter(e => e.vehicleId === v.id && e.km).map(e => ({ date: e.date, km: e.km }))]
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (pts.length >= 2) {
+    const first = pts[0], last = pts[pts.length - 1];
+    const days = daysBetween(first.date, last.date);
+    if (days >= 14 && last.km > first.km) return (last.km - first.km) / (days / 30.44);
+  }
+  return v.type === 'moto' ? 500 : 1000;
+}
+
+/* ============================================================
+   LOGIQUE DES ÉCHÉANCES
+   ============================================================ */
+function lastDone(op) {
+  const list = state.entries.filter(e => e.opIds.includes(op.id)).sort((a, b) => b.date.localeCompare(a.date) || (b.km || 0) - (a.km || 0));
+  if (list.length) return { date: list[0].date, km: list[0].km };
+  if (op.baseDate || op.baseKm != null) return { date: op.baseDate, km: op.baseKm };
+  return null;
+}
+function compute(op) {
+  const v = vehicle(op.vehicleId);
+  const last = lastDone(op);
+  const res = { op, v, last, status: 'unknown', nextKm: null, nextDate: null, remKm: null, remDays: null, dueDays: null, estDate: null, cost: (op.min + op.max) / 2 };
+  if (!last || !v) return res;
+  const kpm = kmPerMonth(v);
+  if (op.km && last.km != null) { res.nextKm = last.km + op.km; res.remKm = res.nextKm - v.km; }
+  if (op.m && last.date) { res.nextDate = addMonths(last.date, op.m); res.remDays = daysBetween(today(), res.nextDate); }
+  if (res.nextKm == null && res.nextDate == null) return res;
+  // Conversion km → jours puis on garde la plus proche des deux
+  const kmDays = res.remKm != null ? res.remKm / (kpm / 30.44) : Infinity;
+  const dDays = res.remDays != null ? res.remDays : Infinity;
+  res.dueDays = Math.min(kmDays, dDays);
+  res.estDate = isoLocal(new Date(Date.now() + res.dueDays * 86400000));
+  const t = state.thresholds;
+  const soonKm = op.km ? Math.min(t.km, op.km * 0.25) : t.km;
+  const soonDays = op.m ? Math.min(t.days, op.m * 30 * 0.25) : t.days;
+  if ((res.remKm != null && res.remKm < 0) || (res.remDays != null && res.remDays < 0)) res.status = 'late';
+  else if ((res.remKm != null && res.remKm < soonKm) || (res.remDays != null && res.remDays < soonDays)) res.status = 'soon';
+  else res.status = 'ok';
+  return res;
+}
+function allComputed(vehicleId) {
+  return state.ops.filter(o => !vehicleId || o.vehicleId === vehicleId).map(compute)
+    .sort((a, b) => rank(a) - rank(b));
+}
+function rank(c) { const order = { late: 0, soon: 1, ok: 2, unknown: 3 }; return order[c.status] * 1e7 + (c.dueDays ?? 5e6); }
+function statusLabel(s) { return { ok: 'OK', soon: 'Bientôt', late: 'En retard', unknown: 'À renseigner' }[s]; }
+function dueText(c) {
+  if (c.status === 'unknown') return 'Dernière réalisation inconnue';
+  const parts = [];
+  if (c.remKm != null) parts.push(c.remKm < 0 ? `dépassé de ${fmtKm(-c.remKm)}` : `dans ${fmtKm(c.remKm)}`);
+  if (c.remDays != null) parts.push(c.remDays < 0 ? `en retard de ${-c.remDays} j` : `dans ${c.remDays} j`);
+  return parts.join(' · ');
+}
+function estCostWithin(vehicleId, months) {
+  return allComputed(vehicleId).filter(c => c.status !== 'unknown' && c.dueDays <= months * 30.44).reduce((s, c) => s + c.cost, 0);
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const PAGES = [
+  { id: 'dashboard', label: 'Dashboard', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="12" width="8" height="9" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg>' },
+  { id: 'vehicules', label: 'Véhicules', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14l1-6-2-5H6L4 11z"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>' },
+  { id: 'historique', label: 'Historique', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' },
+  { id: 'parametres', label: 'Paramètres', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>' },
+];
+let page = 'dashboard', pageArg = null;
+function go(id, arg) { page = id; pageArg = arg || null; if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id); render(); window.scrollTo(0, 0); }
+function renderNav() {
+  const html = PAGES.map(p => `<button class="nav-btn ${page === p.id ? 'active' : ''}" onclick="go('${p.id}')">${p.ico}<span>${p.label}</span></button>`).join('');
+  document.getElementById('nav-side').innerHTML = html;
+  document.getElementById('nav-bottom').innerHTML = html;
+  document.getElementById('theme-side').innerHTML = (state.theme === 'dark' ? '☀️ Mode clair' : '🌙 Mode sombre');
+}
+function toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; applyTheme(); save(); renderNav(); }
+function applyTheme() { document.documentElement.setAttribute('data-theme', state.theme); }
+
+function render() {
+  applyTheme(); renderNav();
+  const main = document.getElementById('main');
+  document.getElementById('fab').classList.toggle('hidden', !state.setupDone);
+  if (!state.setupDone) { main.innerHTML = renderSetup(); return; }
+  main.innerHTML = { dashboard: renderDashboard, vehicules: renderVehicules, historique: renderHistorique, parametres: renderParametres }[page]();
+  if (page === 'dashboard') drawChart();
+}
+function topbar(title, actions = '') {
+  return `<div class="topbar"><h1>${title}</h1><div class="actions">${actions}<button class="btn icon" title="Changer de thème" onclick="toggleTheme()">${state.theme === 'dark' ? '☀️' : '🌙'}</button></div></div>`;
+}
+
+/* ============================================================
+   ÉCRAN DE DÉMARRAGE RAPIDE
+   ============================================================ */
+let setupStep = 0;
+function renderSetup() {
+  const vs = state.vehicles;
+  if (setupStep === 0) {
+    const mz = vs.find(v => v.id === 'mazda2');
+    return `<div class="topbar"><h1>Bienvenue 👋</h1></div>
+    <div class="card">
+      <h2>Configuration en 3 étapes</h2>
+      <p class="muted">On règle d'abord la Mazda 2, puis tu indiques quand tu as fait chaque entretien pour la dernière fois. Tu pourras tout modifier ensuite.</p>
+      ${mz ? `<h3 style="margin-top:16px">La Mazda 2 (2006) est… ?</h3>
+      <div class="seg" style="margin-top:8px;max-width:360px">
+        <button class="${mz.fuel === 'essence' ? 'on' : ''}" onclick="setFuel('essence')">⛽ Essence</button>
+        <button class="${mz.fuel === 'diesel' ? 'on' : ''}" onclick="setFuel('diesel')">🛢️ Diesel (1.4 MZ-CD)</button>
+      </div>
+      <p class="tiny" style="margin-top:8px">Essence : distribution par chaîne, rien à prévoir. Diesel : courroie de distribution à remplacer vers 120 000 km / 10 ans → ajoutée automatiquement comme prioritaire.</p>` : ''}
+      <div class="modal-foot"><button class="btn primary" ${mz && !mz.fuel ? 'disabled' : ''} onclick="setupStep=1;render()">Continuer →</button></div>
+    </div>`;
+  }
+  const v = vs[setupStep - 1];
+  if (!v) { state.setupDone = true; save(); go('dashboard'); return ''; }
+  const ops = state.ops.filter(o => o.vehicleId === v.id);
+  return `<div class="topbar"><h1>${vIcon(v)} ${esc(v.name)}</h1><span class="muted small">Étape ${setupStep + 1} / ${vs.length + 1}</span></div>
+  <div class="card">
+    <h2>Quand as-tu fait ça pour la dernière fois ?</h2>
+    <p class="muted small">Indique la date et/ou le kilométrage. Coche « je ne sais pas » si tu n'as aucune idée : l'opération restera à renseigner.</p>
+    <div class="form" style="margin:12px 0"><div class="f"><label>Kilométrage actuel</label>${kmInput(v)}</div></div>
+    <div id="setup-list">
+      ${ops.map(o => `<div class="setup-op" data-op="${o.id}">
+        <div><div class="name">${CATS[o.cat].ico} ${esc(o.name)} ${o.priority ? '<span class="chip late">prioritaire</span>' : ''}</div><div class="tiny">${intervalText(o)}</div></div>
+        <div class="inputs">
+          <input type="date" ${o.baseDate ? `value="${o.baseDate}"` : ''} max="${today()}" ${o.baseDate || o.baseKm != null ? '' : 'disabled'}>
+          <input type="number" placeholder="km" ${o.baseKm != null ? `value="${o.baseKm}"` : ''} ${o.baseDate || o.baseKm != null ? '' : 'disabled'}>
+          <label class="unk"><input type="checkbox" ${o.baseDate || o.baseKm != null ? '' : 'checked'} onchange="toggleUnk(this)"> je ne sais pas</label>
+        </div></div>`).join('')}
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="setupStep--;render()">← Retour</button>
+      <button class="btn primary" onclick="saveSetup('${v.id}')">${setupStep === vs.length ? 'Terminer ✓' : 'Suivant →'}</button>
+    </div>
+  </div>`;
+}
+function intervalText(o) { const p = []; if (o.km) p.push(`tous les ${fmtKm(o.km)}`); if (o.m) p.push(`${o.m >= 12 && o.m % 12 === 0 ? o.m / 12 + ' an' + (o.m > 12 ? 's' : '') : o.m + ' mois'}`); return p.join(' ou ') + ' · ' + fmtRange(o.min, o.max); }
+function toggleUnk(cb) { const row = cb.closest('.setup-op'); row.querySelectorAll('input[type=date],input[type=number]').forEach(i => i.disabled = cb.checked); }
+function setFuel(f) {
+  const mz = vehicle('mazda2'); mz.fuel = f;
+  state.ops = state.ops.filter(o => !(o.vehicleId === 'mazda2' && (o.name === DIESEL_OP.name || (o.essenceOnly && f === 'diesel'))));
+  if (f === 'diesel') state.ops.push(makeOp('mazda2', DIESEL_OP));
+  else if (!state.ops.some(o => o.vehicleId === 'mazda2' && o.essenceOnly)) state.ops.push(makeOp('mazda2', DEFAULT_OPS.mazda2.find(o => o.essenceOnly)));
+  save(); render();
+}
+function saveSetup(vehicleId) {
+  document.querySelectorAll('#setup-list .setup-op').forEach(row => {
+    const op = state.ops.find(o => o.id === row.dataset.op);
+    const unk = row.querySelector('input[type=checkbox]').checked;
+    const d = row.querySelector('input[type=date]').value, k = row.querySelector('input[type=number]').value;
+    if (unk || (!d && !k)) { op.baseDate = null; op.baseKm = null; }
+    else { op.baseDate = d || null; op.baseKm = k ? Number(k) : null; }
+  });
+  save();
+  if (setupStep === state.vehicles.length) { state.setupDone = true; setupStep = 0; save(); toast('Configuration terminée 🎉'); go('dashboard'); }
+  else { setupStep++; render(); }
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  const all = allComputed();
+  const upcoming = all.filter(c => c.status !== 'unknown').slice(0, 12);
+  const unknownCount = all.filter(c => c.status === 'unknown').length;
+  const total12 = state.vehicles.map(v => ({ v, c: estCostWithin(v.id, 12) }));
+  return topbar('Tableau de bord', `<button class="btn primary" onclick="openEntryModal()">＋ Entretien</button>`) + `
+  <div class="grid-2">
+    ${state.vehicles.map(v => {
+      const cs = allComputed(v.id); const first = cs.find(c => c.status !== 'unknown');
+      const nLate = cs.filter(c => c.status === 'late').length, nSoon = cs.filter(c => c.status === 'soon').length, nUnk = cs.filter(c => c.status === 'unknown').length;
+      return `<div class="card vehicle-card" onclick="go('vehicules','${v.id}')">
+        <div class="vehicle-head"><div class="ico">${vIcon(v)}</div><div class="grow"><h2>${esc(v.name)}</h2><div class="small muted">${v.year} · ${kmInput(v)}</div></div></div>
+        <div style="margin-top:14px">
+          ${first ? `<div class="row" style="border:0;padding:0"><span class="dot ${first.status}"></span><div class="grow"><div class="name">${esc(first.op.name)}</div><div class="sub">${dueText(first)}</div></div><div class="right"><div class="v">${fmtRange(first.op.min, first.op.max)}</div></div></div>`
+          : `<div class="note">Aucune échéance connue : renseigne tes derniers entretiens.</div>`}
+        </div>
+        <div class="kpi">
+          <div class="tile"><div class="l">En retard</div><div class="v" style="color:var(--late)">${nLate}</div></div>
+          <div class="tile"><div class="l">Bientôt</div><div class="v" style="color:var(--soon)">${nSoon}</div></div>
+          <div class="tile"><div class="l">3 mois</div><div class="v">${fmtEur(estCostWithin(v.id, 3))}</div></div>
+          <div class="tile"><div class="l">6 mois</div><div class="v">${fmtEur(estCostWithin(v.id, 6))}</div></div>
+        </div>
+        ${nUnk ? `<div class="tiny" style="margin-top:8px">${nUnk} opération${nUnk > 1 ? 's' : ''} à renseigner · ~${Math.round(kmPerMonth(v))} km/mois</div>` : `<div class="tiny" style="margin-top:8px">~${Math.round(kmPerMonth(v))} km/mois</div>`}
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div class="section-title"><h2>À venir</h2><span class="small muted">Estimation 12 mois : <b>${fmtEur(total12.reduce((s, t) => s + t.c, 0))}</b> (${total12.map(t => `${esc(t.v.name)} ${fmtEur(t.c)}`).join(' · ')})</span></div>
+  <div class="card">
+    ${upcoming.length ? `<div class="list">${upcoming.map(c => rowDue(c, true)).join('')}</div>` : `<div class="empty"><div class="big">🗓️</div>Rien de connu pour l'instant.<br><span class="small">Ajoute un entretien ou renseigne les dernières réalisations dans la fiche de chaque véhicule.</span></div>`}
+    ${unknownCount ? `<div class="note" style="margin-top:12px">${unknownCount} opération${unknownCount > 1 ? 's' : ''} sans date connue — <a href="#vehicules" onclick="go('vehicules');return false;">à renseigner dans les fiches véhicules</a>.</div>` : ''}
+  </div>
+
+  <div class="section-title"><h2>Dépenses</h2></div>
+  <div class="card">
+    ${renderExpenses()}
+  </div>`;
+}
+function rowDue(c, withVehicle) {
+  return `<div class="row clickable" onclick="go('vehicules','${c.v.id}')">
+    <span class="dot ${c.status}"></span>
+    <div class="grow"><div class="name">${esc(c.op.name)}${withVehicle ? ` <span class="tiny">· ${esc(c.v.name)}</span>` : ''}</div><div class="sub">${dueText(c)}${c.estDate && c.status !== 'late' ? ` · vers le ${fmtDate(c.estDate)}` : ''}</div></div>
+    <div class="right"><div class="v">${fmtRange(c.op.min, c.op.max)}</div><div class="s">${statusLabel(c.status)}</div></div>
+  </div>`;
+}
+
+/* ---- Dépenses & graphique ---- */
+function renderExpenses() {
+  const es = state.entries.filter(e => e.cost > 0);
+  if (!state.entries.length) return `<div class="empty"><div class="big">💶</div>Pas encore de dépense enregistrée.</div>`;
+  const years = [...new Set(state.entries.map(e => e.date.slice(0, 4)))].sort().reverse();
+  const rows = years.map(y => `<tr><td>${y}</td>${state.vehicles.map(v => `<td class="num">${fmtEur(es.filter(e => e.vehicleId === v.id && e.date.startsWith(y)).reduce((s, e) => s + e.cost, 0))}</td>`).join('')}<td class="num"><b>${fmtEur(es.filter(e => e.date.startsWith(y)).reduce((s, e) => s + e.cost, 0))}</b></td></tr>`).join('');
+  const perKm = state.vehicles.map(v => {
+    const pts = state.entries.filter(e => e.vehicleId === v.id && e.km).map(e => e.km);
+    const driven = pts.length ? Math.max(v.km, ...pts) - Math.min(...pts) : 0;
+    const cost = es.filter(e => e.vehicleId === v.id).reduce((s, e) => s + e.cost, 0);
+    return `<span>${esc(v.name)} : <b>${driven > 0 ? (cost / driven).toFixed(2).replace('.', ',') + ' €/km' : '—'}</b></span>`;
+  }).join(' · ');
+  return `<table class="tbl"><thead><tr><th>Année</th>${state.vehicles.map(v => `<th class="num">${esc(v.name)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="small muted" style="margin:10px 0 16px">Coût moyen au km (depuis le premier entretien saisi) : ${perKm}</div>
+  <h3>12 derniers mois</h3>
+  <div class="chart-wrap" id="chart"><div class="chart-tip" id="chart-tip"></div></div>`;
+}
+function drawChart() {
+  const wrap = document.getElementById('chart'); if (!wrap) return;
+  const months = []; const d = new Date(); d.setDate(1);
+  for (let i = 11; i >= 0; i--) { const m = new Date(d.getFullYear(), d.getMonth() - i, 1); months.push({ key: isoLocal(m).slice(0, 7), label: m.toLocaleDateString('fr-FR', { month: 'short' }), total: 0 }); }
+  state.entries.forEach(e => { const m = months.find(x => x.key === e.date.slice(0, 7)); if (m) m.total += e.cost || 0; });
+  const W = 720, H = 180, padL = 44, padB = 26, padT = 10, max = Math.max(50, ...months.map(m => m.total));
+  const bw = (W - padL - 8) / 12, plotH = H - padB - padT;
+  const ticks = [0, max / 2, max];
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Dépenses par mois">`;
+  ticks.forEach(t => { const y = padT + plotH - (t / max) * plotH; svg += `<line x1="${padL}" x2="${W - 8}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-width="1"/><text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--text-3)">${Math.round(t)} €</text>`; });
+  months.forEach((m, i) => {
+    const h = (m.total / max) * plotH, x = padL + i * bw + bw * 0.2, y = padT + plotH - h;
+    svg += `<rect data-i="${i}" x="${x}" y="${y}" width="${bw * 0.6}" height="${h}" rx="4" fill="var(--accent)"/>`;
+    svg += `<rect data-i="${i}" x="${padL + i * bw}" y="${padT}" width="${bw}" height="${plotH}" fill="transparent" class="hit"/>`;
+    svg += `<text x="${x + bw * 0.3}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--text-2)">${m.label}</text>`;
+  });
+  svg += '</svg>';
+  wrap.insertAdjacentHTML('beforeend', svg);
+  const tip = document.getElementById('chart-tip');
+  wrap.querySelectorAll('.hit').forEach(r => {
+    r.addEventListener('mousemove', ev => { const m = months[r.dataset.i]; tip.style.display = 'block'; tip.textContent = `${m.label} ${m.key.slice(0, 4)} : ${fmtEur(m.total)}`; const b = wrap.getBoundingClientRect(); tip.style.left = (ev.clientX - b.left + 12) + 'px'; tip.style.top = (ev.clientY - b.top - 30) + 'px'; });
+    r.addEventListener('mouseleave', () => tip.style.display = 'none');
+  });
+}
+
+/* ============================================================
+   VÉHICULES
+   ============================================================ */
+let vehTab = null;
+function renderVehicules() {
+  const v = vehicle(pageArg || vehTab) || state.vehicles[0];
+  if (!v) return topbar('Véhicules') + `<div class="empty"><div class="big">🚗</div>Aucun véhicule. Ajoute-en un dans les paramètres.</div>`;
+  vehTab = v.id; pageArg = null;
+  const cs = allComputed(v.id);
+  const groups = {};
+  cs.forEach(c => (groups[c.op.cat] = groups[c.op.cat] || []).push(c));
+  return topbar('Véhicules', `<button class="btn primary" onclick="openEntryModal('${v.id}')">＋ Entretien</button>`) + `
+  <div class="tabs" style="margin-bottom:14px">${state.vehicles.map(x => `<button class="btn ${x.id === v.id ? 'active' : ''}" onclick="vehTab='${x.id}';render()">${vIcon(x)} ${esc(x.name)}</button>`).join('')}</div>
+  <div class="card">
+    <div class="vehicle-head"><div class="ico">${vIcon(v)}</div><div class="grow"><h2>${esc(v.name)}</h2><div class="small muted">${v.year}${v.plate ? ' · ' + esc(v.plate) : ''}${v.fuel ? ' · ' + v.fuel : ''} · mise en circulation ${fmtDate(v.dateCirc)}</div></div>
+    <button class="btn sm" onclick="openVehicleModal('${v.id}')">Modifier</button></div>
+    <div class="kpi">
+      <div class="tile"><div class="l">Kilométrage</div><div class="v">${kmInput(v)}</div></div>
+      <div class="tile"><div class="l">Moyenne</div><div class="v">${Math.round(kmPerMonth(v))} km/mois</div></div>
+      <div class="tile"><div class="l">À venir 6 mois</div><div class="v">${fmtEur(estCostWithin(v.id, 6))}</div></div>
+      <div class="tile"><div class="l">À venir 12 mois</div><div class="v">${fmtEur(estCostWithin(v.id, 12))}</div></div>
+    </div>
+  </div>
+  <div class="section-title"><h2>Plan d'entretien</h2><span class="tiny">indicatif, à ajuster selon le carnet constructeur</span></div>
+  ${Object.keys(groups).map(cat => `<div class="card"><h3 style="margin-bottom:6px">${CATS[cat].ico} ${CATS[cat].label}</h3><div class="list">${groups[cat].map(c => rowOp(c)).join('')}</div></div>`).join('')}
+  <div style="margin-top:14px"><button class="btn" onclick="openOpModal(null,'${v.id}')">＋ Ajouter une opération</button></div>`;
+}
+function rowOp(c) {
+  const o = c.op;
+  return `<div class="row">
+    <span class="dot ${c.status}"></span>
+    <div class="grow">
+      <div class="name">${esc(o.name)} ${o.priority ? '<span class="chip late">prioritaire</span>' : ''}</div>
+      <div class="sub">${intervalText(o)}</div>
+      <div class="sub">${c.last ? `Dernier : ${c.last.date ? fmtDate(c.last.date) : ''}${c.last.km != null ? ' · ' + fmtKm(c.last.km) : ''}` : '<i>Jamais renseigné</i>'}${c.status !== 'unknown' ? ` → <b>${dueText(c)}</b>` : ''}</div>
+      ${o.notes ? `<div class="tiny">${esc(o.notes)}</div>` : ''}
+    </div>
+    <div class="right">
+      <span class="chip ${c.status}">${statusLabel(c.status)}</span>
+      <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:6px">
+        ${o.check ? `<button class="btn sm" title="Contrôlé, rien à signaler" onclick="quickCheck('${o.id}')">✓ RAS</button>` : ''}
+        <button class="btn sm" onclick="openEntryModal('${o.vehicleId}','${o.id}')">${c.status === 'unknown' ? 'Renseigner' : 'Fait'}</button>
+        <button class="btn sm icon" title="Modifier" onclick="openOpModal('${o.id}')">✎</button>
+      </div>
+    </div>
+  </div>`;
+}
+function setKm(vehicleId, val) {
+  const v = vehicle(vehicleId); const km = Number(val); if (!(km >= 0)) return;
+  v.km = km; state.kmLog.push({ vehicleId, date: today(), km }); save(); render(); toast('Kilométrage mis à jour');
+}
+function quickCheck(opId) {
+  const op = state.ops.find(o => o.id === opId); const v = vehicle(op.vehicleId);
+  state.entries.push({ id: uid(), vehicleId: v.id, date: today(), km: v.km, opIds: [opId], cost: 0, place: 'Moi-même', parts: '', notes: 'Contrôle RAS', photo: null });
+  save(); render(); toast('Contrôle enregistré ✓');
+}
+
+/* ============================================================
+   HISTORIQUE
+   ============================================================ */
+let histFilter = { v: '', cat: '', year: '' };
+function renderHistorique() {
+  const years = [...new Set(state.entries.map(e => e.date.slice(0, 4)))].sort().reverse();
+  let list = [...state.entries].sort((a, b) => b.date.localeCompare(a.date));
+  if (histFilter.v) list = list.filter(e => e.vehicleId === histFilter.v);
+  if (histFilter.year) list = list.filter(e => e.date.startsWith(histFilter.year));
+  if (histFilter.cat) list = list.filter(e => e.opIds.some(id => (state.ops.find(o => o.id === id) || {}).cat === histFilter.cat));
+  const total = list.reduce((s, e) => s + (e.cost || 0), 0);
+  return topbar('Historique', `<button class="btn primary" onclick="openEntryModal()">＋ Entretien</button>`) + `
+  <div class="card"><div class="form"><div class="inline" style="grid-template-columns:1fr 1fr 1fr">
+    <select onchange="histFilter.v=this.value;render()"><option value="">Tous les véhicules</option>${state.vehicles.map(v => `<option value="${v.id}" ${histFilter.v === v.id ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select>
+    <select onchange="histFilter.cat=this.value;render()"><option value="">Toutes catégories</option>${Object.keys(CATS).map(c => `<option value="${c}" ${histFilter.cat === c ? 'selected' : ''}>${CATS[c].label}</option>`).join('')}</select>
+    <select onchange="histFilter.year=this.value;render()"><option value="">Toutes années</option>${years.map(y => `<option ${histFilter.year === y ? 'selected' : ''}>${y}</option>`).join('')}</select>
+  </div></div></div>
+  <div class="section-title"><h2>${list.length} entretien${list.length > 1 ? 's' : ''}</h2><span class="small muted">Total : <b>${fmtEur(total)}</b></span></div>
+  <div class="card">${list.length ? `<div class="list">${list.map(e => rowEntry(e)).join('')}</div>` : `<div class="empty"><div class="big">📭</div>Aucun entretien enregistré${histFilter.v || histFilter.cat || histFilter.year ? ' avec ces filtres' : ''}.</div>`}</div>`;
+}
+function rowEntry(e) {
+  const v = vehicle(e.vehicleId); const ops = e.opIds.map(id => state.ops.find(o => o.id === id)).filter(Boolean);
+  return `<div class="row">
+    <div class="ico">${v ? vIcon(v) : '❓'}</div>
+    <div class="grow">
+      <div class="name">${ops.length ? ops.map(o => esc(o.name)).join(', ') : '<i>Opération supprimée</i>'}</div>
+      <div class="sub">${fmtDate(e.date)} · ${fmtKm(e.km)} · ${esc(e.place || '—')}${v ? ' · ' + esc(v.name) : ''}</div>
+      ${e.parts ? `<div class="tiny">Pièces : ${esc(e.parts)}</div>` : ''}${e.notes ? `<div class="tiny">${esc(e.notes)}</div>` : ''}
+    </div>
+    ${e.photo ? `<img class="photo-thumb" src="${e.photo}" onclick="showPhoto('${e.id}')" alt="facture">` : ''}
+    <div class="right"><div class="v">${fmtEur(e.cost)}</div>
+      <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:6px"><button class="btn sm icon" onclick="openEntryModal(null,null,'${e.id}')">✎</button><button class="btn sm icon danger" onclick="confirmDeleteEntry('${e.id}')">🗑</button></div></div>
+  </div>`;
+}
+function showPhoto(id) { const e = state.entries.find(x => x.id === id); openModal(`<div class="modal-head"><h2>Facture</h2><button class="btn icon" onclick="closeModal()">✕</button></div><img src="${e.photo}" style="width:100%;border-radius:12px">`); }
+function confirmDeleteEntry(id) {
+  openModal(`<div class="modal-head"><h2>Supprimer cet entretien ?</h2></div><p class="muted">Les échéances seront recalculées.</p>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn danger" onclick="state.entries=state.entries.filter(e=>e.id!=='${id}');save();closeModal();render();toast('Supprimé')">Supprimer</button></div>`);
+}
+
+/* ============================================================
+   PARAMÈTRES
+   ============================================================ */
+function renderParametres() {
+  return topbar('Paramètres') + `
+  <div class="card"><h2>Véhicules</h2>
+    <div class="list" style="margin-top:8px">${state.vehicles.map(v => `<div class="row"><div class="ico">${vIcon(v)}</div><div class="grow"><div class="name">${esc(v.name)}</div><div class="sub">${v.year} · ${fmtKm(v.km)} · ${v.kmPerMonth ? v.kmPerMonth + ' km/mois (saisi)' : Math.round(kmPerMonth(v)) + ' km/mois (calculé)'}</div></div>
+      <button class="btn sm" onclick="openVehicleModal('${v.id}')">Modifier</button><button class="btn sm" onclick="go('vehicules','${v.id}')">Plan</button></div>`).join('')}</div>
+    <div style="margin-top:12px"><button class="btn" onclick="openVehicleModal(null)">＋ Ajouter un véhicule</button></div>
+  </div>
+  <div class="card"><h2>Seuils d'alerte « bientôt »</h2>
+    <div class="form inline" style="margin-top:10px">
+      <div class="f"><label>Kilomètres avant l'échéance</label><input type="number" value="${state.thresholds.km}" onchange="state.thresholds.km=Number(this.value)||1000;save();toast('Seuil enregistré')"></div>
+      <div class="f"><label>Jours avant l'échéance</label><input type="number" value="${state.thresholds.days}" onchange="state.thresholds.days=Number(this.value)||30;save();toast('Seuil enregistré')"></div>
+    </div>
+    <p class="tiny">Pour les opérations à intervalle court (ex. chaîne), le seuil est automatiquement réduit à 25 % de l'intervalle.</p>
+  </div>
+  <div class="card"><h2>Sauvegarde</h2>
+    <p class="muted small">Les données sont stockées uniquement dans ce navigateur. Exporte-les régulièrement pour ne rien perdre ou pour les transférer sur un autre appareil.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn" onclick="exportJson()">⬇ Exporter (JSON)</button>
+      <label class="btn">⬆ Importer un fichier<input type="file" accept=".json,application/json" class="hidden" onchange="importFile(this)"></label>
+      <button class="btn" onclick="importPaste()">📋 Importer depuis un texte collé</button>
+    </div>
+  </div>
+  <div class="card"><h2>Apparence</h2><div style="margin-top:8px"><button class="btn" onclick="toggleTheme()">${state.theme === 'dark' ? '☀️ Passer en mode clair' : '🌙 Passer en mode sombre'}</button></div></div>
+  <div class="card"><h2>Zone sensible</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn" onclick="state.setupDone=false;setupStep=0;save();render()">↻ Relancer l'écran de démarrage</button>
+      <button class="btn danger" onclick="confirmReset()">Réinitialiser toutes les données</button>
+    </div>
+  </div>`;
+}
+function exportJson() {
+  const txt = JSON.stringify(state, null, 2);
+  openModal(`<div class="modal-head"><h2>Export JSON</h2><button class="btn icon" onclick="closeModal()">✕</button></div>
+  <p class="muted small">Copie ce texte et garde-le en lieu sûr (ou télécharge-le si ton navigateur l'autorise).</p>
+  <textarea id="export-area" style="width:100%;height:220px;font-family:monospace;font-size:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);padding:10px">${esc(txt)}</textarea>
+  <div class="modal-foot"><button class="btn" onclick="tryDownload()">⬇ Télécharger</button><button class="btn primary" onclick="copyExport()">📋 Copier</button></div>`);
+}
+function copyExport() { const ta = document.getElementById('export-area'); ta.select(); try { navigator.clipboard.writeText(ta.value).then(() => toast('Copié ✓'), () => { document.execCommand('copy'); toast('Copié ✓'); }); } catch (e) { document.execCommand('copy'); toast('Copié ✓'); } }
+async function tryDownload() {
+  const txt = JSON.stringify(state, null, 2), filename = `carnet-entretien-${today()}.json`;
+  // Page hébergée sur claude.ai : passe par la capacité "downloads"
+  try {
+    if (window.claude && window.claude.use) {
+      const dl = await window.claude.use('downloads');
+      if (dl) { await dl.save({ filename, data: txt }); toast('Fichier enregistré ✓'); return; }
+    }
+  } catch (e) { toast('Téléchargement refusé : utilise Copier'); return; }
+  // Fichier ouvert en local : téléchargement classique
+  try { const blob = new Blob([txt], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); toast('Téléchargement lancé'); }
+  catch (e) { toast('Téléchargement bloqué : utilise Copier'); }
+}
+function importFile(input) { const f = input.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => applyImport(r.result); r.readAsText(f); }
+function importPaste() {
+  openModal(`<div class="modal-head"><h2>Importer</h2><button class="btn icon" onclick="closeModal()">✕</button></div>
+  <textarea id="import-area" placeholder="Colle ici le JSON exporté" style="width:100%;height:200px;font-family:monospace;font-size:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);padding:10px"></textarea>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="applyImport(document.getElementById('import-area').value)">Importer</button></div>`);
+}
+function applyImport(txt) {
+  try { const s = JSON.parse(txt); if (!s.vehicles || !s.ops || !s.entries) throw 0; state = s; save(); closeModal(); render(); toast('Données importées ✓'); }
+  catch (e) { toast('Fichier invalide'); }
+}
+function confirmReset() {
+  openModal(`<div class="modal-head"><h2>Tout réinitialiser ?</h2></div><p class="muted">Tous les véhicules, plans et entretiens seront supprimés et remplacés par la configuration de départ. Pense à exporter avant.</p>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn danger" onclick="state=freshState();setupStep=0;save();closeModal();render()">Réinitialiser</button></div>`);
+}
+
+/* ============================================================
+   MODALES
+   ============================================================ */
+function openModal(html) { document.getElementById('modal').innerHTML = html; document.getElementById('modal-bg').classList.add('open'); }
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+let pendingPhoto = null;
+
+/* ---- Ajouter / modifier un entretien ---- */
+function openEntryModal(vehicleId, opId, entryId) {
+  const e = entryId ? state.entries.find(x => x.id === entryId) : null;
+  const vid = e ? e.vehicleId : (vehicleId || (state.vehicles[0] || {}).id);
+  if (!vid) return toast('Ajoute d\'abord un véhicule');
+  pendingPhoto = e ? e.photo : null;
+  openModal(`<div class="modal-head"><h2>${e ? 'Modifier l\'entretien' : 'Nouvel entretien'}</h2><button class="btn icon" onclick="closeModal()">✕</button></div>
+  <div class="form" id="entry-form">
+    <div class="f"><label>Véhicule</label><select id="e-v" onchange="renderOpChecks(this.value, [])">${state.vehicles.map(v => `<option value="${v.id}" ${v.id === vid ? 'selected' : ''}>${vIcon(v)} ${esc(v.name)}</option>`).join('')}</select></div>
+    <div class="inline">
+      <div class="f"><label>Date</label><input type="date" id="e-date" value="${e ? e.date : today()}" max="${today()}"></div>
+      <div class="f"><label>Kilométrage</label><input type="number" id="e-km" value="${e ? e.km ?? '' : vehicle(vid).km}" step="1"></div>
+    </div>
+    <div class="f"><label>Opérations effectuées</label><div class="checks" id="e-ops"></div></div>
+    <div class="inline">
+      <div class="f"><label>Coût réel (€)</label><input type="number" id="e-cost" value="${e ? e.cost : ''}" placeholder="0" step="0.01" min="0"></div>
+      <div class="f"><label>Où ?</label><input id="e-place" list="places" value="${e ? esc(e.place) : ''}" placeholder="Garage ou moi-même"><datalist id="places"><option value="Moi-même"><option value="Garage">${[...new Set(state.entries.map(x => x.place).filter(Boolean))].map(p => `<option value="${esc(p)}">`).join('')}</datalist></div>
+    </div>
+    <div class="f"><label>Pièces utilisées</label><input id="e-parts" value="${e ? esc(e.parts) : ''}" placeholder="Ex. huile 5W30 4 L, filtre Bosch…"></div>
+    <div class="f"><label>Notes</label><textarea id="e-notes" rows="2">${e ? esc(e.notes) : ''}</textarea></div>
+    <div class="f"><label>Photo de la facture (facultatif)</label>
+      <div style="display:flex;gap:10px;align-items:center"><label class="btn sm">📷 Choisir<input type="file" accept="image/*" class="hidden" onchange="loadPhoto(this)"></label><span id="e-photo-info" class="tiny">${pendingPhoto ? 'Photo jointe' : 'Aucune'}</span>${pendingPhoto ? '<button class="btn sm" onclick="pendingPhoto=null;document.getElementById(\'e-photo-info\').textContent=\'Aucune\'">Retirer</button>' : ''}</div></div>
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="saveEntry(${e ? `'${e.id}'` : 'null'})">Enregistrer</button></div>`);
+  renderOpChecks(vid, e ? e.opIds : (opId ? [opId] : []));
+}
+function renderOpChecks(vid, checked) {
+  const groups = {};
+  state.ops.filter(o => o.vehicleId === vid).forEach(o => (groups[o.cat] = groups[o.cat] || []).push(o));
+  document.getElementById('e-ops').innerHTML = Object.keys(groups).map(cat => `<div class="cat">${CATS[cat].ico} ${CATS[cat].label}</div>` +
+    groups[cat].map(o => `<label class="check"><input type="checkbox" value="${o.id}" ${checked.includes(o.id) ? 'checked' : ''}> ${esc(o.name)} <span class="c">${fmtRange(o.min, o.max)}</span></label>`).join('')).join('');
+}
+function loadPhoto(input) {
+  const f = input.files[0]; if (!f) return;
+  const img = new Image(); const url = URL.createObjectURL(f);
+  img.onload = () => { // Réduction pour tenir dans le stockage local
+    const max = 1000, r = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = img.width * r; c.height = img.height * r;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    pendingPhoto = c.toDataURL('image/jpeg', 0.7); URL.revokeObjectURL(url);
+    document.getElementById('e-photo-info').textContent = 'Photo jointe ✓';
+  };
+  img.src = url;
+}
+function saveEntry(entryId) {
+  const vid = document.getElementById('e-v').value;
+  const opIds = [...document.querySelectorAll('#e-ops input:checked')].map(i => i.value);
+  if (!opIds.length) return toast('Coche au moins une opération');
+  const date = document.getElementById('e-date').value || today();
+  const km = Number(document.getElementById('e-km').value) || null;
+  const data = { vehicleId: vid, date, km, opIds, cost: Number(document.getElementById('e-cost').value) || 0, place: document.getElementById('e-place').value.trim(),
+    parts: document.getElementById('e-parts').value.trim(), notes: document.getElementById('e-notes').value.trim(), photo: pendingPhoto };
+  if (entryId) Object.assign(state.entries.find(e => e.id === entryId), data);
+  else state.entries.push({ id: uid(), ...data });
+  const v = vehicle(vid);
+  if (km && km > v.km) { v.km = km; state.kmLog.push({ vehicleId: vid, date, km }); }
+  save(); closeModal(); render(); toast(entryId ? 'Entretien modifié ✓' : 'Entretien enregistré ✓');
+}
+
+/* ---- Ajouter / modifier une opération du plan ---- */
+function openOpModal(opId, vehicleId) {
+  const o = opId ? state.ops.find(x => x.id === opId) : { vehicleId, name: '', cat: 'autre', km: '', m: '', min: '', max: '', check: false, notes: '', baseDate: '', baseKm: '' };
+  openModal(`<div class="modal-head"><h2>${opId ? 'Modifier l\'opération' : 'Nouvelle opération'}</h2><button class="btn icon" onclick="closeModal()">✕</button></div>
+  <div class="form">
+    <div class="f"><label>Nom</label><input id="o-name" value="${esc(o.name)}" placeholder="Ex. Vidange"></div>
+    <div class="f"><label>Catégorie</label><select id="o-cat">${Object.keys(CATS).map(c => `<option value="${c}" ${o.cat === c ? 'selected' : ''}>${CATS[c].ico} ${CATS[c].label}</option>`).join('')}</select></div>
+    <div class="inline">
+      <div class="f"><label>Intervalle (km)</label><input type="number" id="o-km" value="${o.km ?? ''}" placeholder="vide = aucun"></div>
+      <div class="f"><label>Intervalle (mois)</label><input type="number" id="o-m" value="${o.m ?? ''}" placeholder="vide = aucun"></div>
+    </div>
+    <div class="inline">
+      <div class="f"><label>Coût estimé min (€)</label><input type="number" id="o-min" value="${o.min ?? ''}"></div>
+      <div class="f"><label>Coût estimé max (€)</label><input type="number" id="o-max" value="${o.max ?? ''}"></div>
+    </div>
+    <div class="inline">
+      <div class="f"><label>Dernière réalisation (date)</label><input type="date" id="o-bdate" value="${o.baseDate || ''}" max="${today()}"></div>
+      <div class="f"><label>Dernière réalisation (km)</label><input type="number" id="o-bkm" value="${o.baseKm ?? ''}"></div>
+    </div>
+    <p class="tiny" style="margin:-4px 0 0">Point de départ utilisé tant qu'aucun entretien n'est saisi pour cette opération. Laisse vide = inconnu.</p>
+    <label class="check" style="padding-left:0"><input type="checkbox" id="o-check" ${o.check ? 'checked' : ''}> Simple contrôle (bouton « RAS » en un clic)</label>
+    <div class="f"><label>Notes</label><input id="o-notes" value="${esc(o.notes)}"></div>
+  </div>
+  <div class="modal-foot">${opId ? `<button class="btn danger" style="margin-right:auto" onclick="deleteOp('${opId}')">Supprimer</button>` : ''}<button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="saveOp(${opId ? `'${opId}'` : 'null'}, '${o.vehicleId}')">Enregistrer</button></div>`);
+}
+function saveOp(opId, vehicleId) {
+  const g = id => document.getElementById(id).value;
+  const name = g('o-name').trim(); if (!name) return toast('Donne un nom à l\'opération');
+  const data = { name, cat: g('o-cat'), km: Number(g('o-km')) || null, m: Number(g('o-m')) || null, min: Number(g('o-min')) || 0, max: Number(g('o-max')) || 0,
+    check: document.getElementById('o-check').checked, notes: g('o-notes').trim(), baseDate: g('o-bdate') || null, baseKm: g('o-bkm') !== '' ? Number(g('o-bkm')) : null };
+  if (data.max < data.min) data.max = data.min;
+  if (opId) Object.assign(state.ops.find(o => o.id === opId), data);
+  else state.ops.push({ id: uid(), vehicleId, priority: false, essenceOnly: false, ...data });
+  save(); closeModal(); render(); toast('Opération enregistrée ✓');
+}
+function deleteOp(opId) { state.ops = state.ops.filter(o => o.id !== opId); save(); closeModal(); render(); toast('Opération supprimée'); }
+
+/* ---- Ajouter / modifier un véhicule ---- */
+function openVehicleModal(id) {
+  const v = id ? vehicle(id) : { name: '', brand: '', model: '', year: '', plate: '', km: '', dateCirc: '', kmPerMonth: '', type: 'car', fuel: '' };
+  openModal(`<div class="modal-head"><h2>${id ? 'Modifier le véhicule' : 'Nouveau véhicule'}</h2><button class="btn icon" onclick="closeModal()">✕</button></div>
+  <div class="form">
+    <div class="f"><label>Type</label><div class="seg"><button id="v-car" class="${v.type === 'car' ? 'on' : ''}" onclick="segType('car')">🚗 Voiture</button><button id="v-moto" class="${v.type === 'moto' ? 'on' : ''}" onclick="segType('moto')">🏍️ Moto</button></div><input type="hidden" id="v-type" value="${v.type}"></div>
+    <div class="f"><label>Nom affiché</label><input id="v-name" value="${esc(v.name)}" placeholder="Ex. Mazda 2"></div>
+    <div class="inline"><div class="f"><label>Marque</label><input id="v-brand" value="${esc(v.brand)}"></div><div class="f"><label>Modèle</label><input id="v-model" value="${esc(v.model)}"></div></div>
+    <div class="inline"><div class="f"><label>Année</label><input type="number" id="v-year" value="${v.year}"></div><div class="f"><label>Immatriculation</label><input id="v-plate" value="${esc(v.plate)}"></div></div>
+    <div class="inline"><div class="f"><label>Kilométrage actuel</label><input type="number" id="v-km" value="${v.km}"></div><div class="f"><label>Mise en circulation</label><input type="date" id="v-date" value="${v.dateCirc || ''}"></div></div>
+    <div class="inline"><div class="f"><label>Km / mois (vide = calcul auto)</label><input type="number" id="v-kpm" value="${v.kmPerMonth || ''}"></div><div class="f"><label>Carburant</label><select id="v-fuel"><option value="">—</option><option value="essence" ${v.fuel === 'essence' ? 'selected' : ''}>Essence</option><option value="diesel" ${v.fuel === 'diesel' ? 'selected' : ''}>Diesel</option></select></div></div>
+  </div>
+  <div class="modal-foot">${id ? `<button class="btn danger" style="margin-right:auto" onclick="confirmDeleteVehicle('${id}')">Supprimer</button>` : ''}<button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="saveVehicle(${id ? `'${id}'` : 'null'})">Enregistrer</button></div>`);
+}
+function segType(t) { document.getElementById('v-type').value = t; document.getElementById('v-car').classList.toggle('on', t === 'car'); document.getElementById('v-moto').classList.toggle('on', t === 'moto'); }
+function saveVehicle(id) {
+  const g = x => document.getElementById(x).value;
+  const name = g('v-name').trim(); if (!name) return toast('Donne un nom au véhicule');
+  const data = { name, brand: g('v-brand').trim(), model: g('v-model').trim(), year: Number(g('v-year')) || '', plate: g('v-plate').trim(), km: Number(g('v-km')) || 0,
+    dateCirc: g('v-date') || null, kmPerMonth: Number(g('v-kpm')) || null, type: g('v-type'), fuel: g('v-fuel') || null };
+  if (id) { const v = vehicle(id); if (data.km !== v.km) state.kmLog.push({ vehicleId: id, date: today(), km: data.km }); Object.assign(v, data); }
+  else { const nid = uid(); state.vehicles.push({ id: nid, ...data }); state.kmLog.push({ vehicleId: nid, date: today(), km: data.km }); vehTab = nid; }
+  save(); closeModal(); render(); toast('Véhicule enregistré ✓');
+}
+function confirmDeleteVehicle(id) {
+  openModal(`<div class="modal-head"><h2>Supprimer ce véhicule ?</h2></div><p class="muted">Son plan d'entretien et tout son historique seront supprimés.</p>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn danger" onclick="deleteVehicle('${id}')">Supprimer</button></div>`);
+}
+function deleteVehicle(id) {
+  state.vehicles = state.vehicles.filter(v => v.id !== id); state.ops = state.ops.filter(o => o.vehicleId !== id);
+  state.entries = state.entries.filter(e => e.vehicleId !== id); state.kmLog = state.kmLog.filter(k => k.vehicleId !== id);
+  vehTab = null; save(); closeModal(); go('parametres'); toast('Véhicule supprimé');
+}
+
+/* ============================================================
+   DIVERS
+   ============================================================ */
+let toastTimer;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200); }
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (PAGES.some(p => p.id === h) && h !== page) { page = h; render(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Mode hors-ligne / installation (PWA)
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {} }); }
+
+// Démarrage
+load();
+{ const h = location.hash.slice(1); if (PAGES.some(p => p.id === h)) page = h; }
+render();
+</script>
+</body>
+</html>
